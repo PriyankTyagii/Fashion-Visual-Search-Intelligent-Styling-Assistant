@@ -53,18 +53,17 @@ This app is a working prototype that allows users to:
 ---
 
 ## 🚀 Main Features Demo
+### 🎯 Top Match (AI-based)
+![Top Match](Screenshot-2025-06-06-144536.png)
 
-### 🟣 Top Match
-![Screenshot 1](![alt text](<Screenshot 2025-06-06 144536.png>))
+### 🧩 Visually Similar Products & Suggestions
+![Similar](Screenshot-2025-06-06-144550.png)
 
-### ✨ Similar Products & Style Suggestions
-![Screenshot 2](![alt text](<Screenshot 2025-06-06 144550.png>))
+### 🔥 Trendy Picks + 🧠 Personalized Suggestions
+![Trending](Screenshot-2025-06-06-144602.png)
 
-### 🔥 Trending + 🧠 Personalized
-![Screenshot 3](![alt text](<Screenshot 2025-06-06 144602.png>))
-
-### 📥 Upload & Welcome UI
-![Screenshot 4](![alt text](<Screenshot 2025-06-06 145310.png>))
+### 📥 Upload Interface
+![Upload](Screenshot-2025-06-06-145310.png)
 
 ---
 
