@@ -1,56 +1,86 @@
 
 # 👗 Fashion Visual Search & Intelligent Styling Assistant
 
-[![Streamlit App](https://img.shields.io/badge/Live%20Demo-Streamlit-green?style=flat-square&logo=streamlit)](https://fashion-visual-search-intelligent-styling-assistant-priyank.streamlit.app/)
-[![Made with Streamlit](https://img.shields.io/badge/Made%20with-Streamlit-blue?style=flat-square&logo=streamlit)](https://streamlit.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Streamlit App](https://img.shields.io/badge/Live%20Demo-Streamlit-green?style=for-the-badge&logo=streamlit)](https://fashion-visual-search-intelligent-styling-assistant-priyank.streamlit.app/)
 
-This intelligent web application allows users to upload any fashion image and receive:
-
-- 🎯 The most visually similar fashion product from inventory
-- 🧩 5 visually similar products
-- 👗 Outfit suggestions based on style
-- 🔥 Trendy picks based on launch date & discounts
-- 🧠 Personalized recommendations based on past uploads
-
-> 🌐 **Live Demo**: [Click here to try the app](https://fashion-visual-search-intelligent-styling-assistant-priyank.streamlit.app/)
+A powerful AI-based fashion intelligence system that allows users to visually search and explore fashion items, recommend outfits, and get style-personalized suggestions — solving the core friction in online apparel shopping.
 
 ---
 
-## 🧠 Use Case
+## 🛍 Industry Problem
 
-Fashion e-commerce loses up to **65% of potential customers** due to poor search relevance. This project solves that with **visual similarity-based product search** and **style-driven suggestions** using deep learning.
+🔍 Over 65% of fashion e-commerce users abandon their shopping journey due to irrelevant results in text-based search.  
+🧠 Fashion is visual — users care about **color**, **cut**, **texture**, and **style fit**, which text search fails to describe.  
+
+---
+
+## 🎯 Solution Summary
+
+This app is a working prototype that allows users to:
+
+- 📤 Upload any clothing photo (from wardrobe, web, or screenshots)
+- 🔎 Find exact & visually similar products
+- 👗 Get outfit suggestions based on **style attributes**
+- 🔥 Discover trending fashion items (new + discounted)
+- 🧠 Receive personalized style recommendations
+
+---
+
+## 🔧 Technical Features
+
+| Feature                       | Description                                                                 |
+|-------------------------------|-----------------------------------------------------------------------------|
+| 🎨 Visual Similarity Engine   | Uses ResNet50 (ImageNet) to generate deep feature vectors from user image   |
+| 🤝 Multi-modal Matching       | Combines image features + metadata (brand, category, price, style)          |
+| 👗 Outfit Recommendation      | Suggests outfit items using metadata like `style_attribute`, `meta_info`    |
+| 🔥 Trend Awareness            | Picks fashion trends using `launch_on` date and `discount`                 |
+| 🧠 Personalized Learning      | Builds per-session style profile using average feature embeddings           |
+| ⚙️ Streamlit Interface        | Modern, responsive, and shareable UI with hover effects, filters, buttons  |
 
 ---
 
 ## 🧰 Tech Stack
 
-| Layer         | Technology                          |
-|---------------|--------------------------------------|
-| Frontend      | [Streamlit](https://streamlit.io/)   |
-| ML Model      | TensorFlow (ResNet50 pretrained)     |
-| Data Handling | Pandas, NumPy                        |
-| Search Logic  | Cosine Similarity (Scikit-learn)     |
-| Deployment    | Streamlit Cloud                      |
+| Layer         | Technology                           |
+|---------------|---------------------------------------|
+| Frontend      | Streamlit                             |
+| ML Model      | TensorFlow (ResNet50 pretrained)      |
+| Data Handling | Pandas, NumPy                         |
+| Similarity    | Scikit-learn (Cosine Similarity)      |
+| Hosting       | Streamlit Cloud                       |
+| Storage       | Git LFS (for large CSV/NPY support)   |
 
 ---
 
-## 🚀 Features
+## 🚀 Main Features Demo
 
-- 📤 Upload image of clothing item (even from social media or screenshots)
-- 🖼 Image processed with **ResNet50** to extract embeddings
-- 🔎 Exact match & 5 visually similar items shown with brand + price
-- 👚 Outfit suggestions based on style metadata
-- 🔥 Trendy picks sorted by launch date and discount
-- 🧠 Personalized picks based on your session history
+### 🟣 Top Match
+![Screenshot 1](![alt text](<Screenshot 2025-06-06 144536.png>))
+
+### ✨ Similar Products & Style Suggestions
+![Screenshot 2](![alt text](<Screenshot 2025-06-06 144550.png>))
+
+### 🔥 Trending + 🧠 Personalized
+![Screenshot 3](![alt text](<Screenshot 2025-06-06 144602.png>))
+
+### 📥 Upload & Welcome UI
+![Screenshot 4](![alt text](<Screenshot 2025-06-06 145310.png>))
 
 ---
 
-## 📸 Screenshot
+## 📊 Dataset Fields Used
 
-> _(Replace this with your actual image file and name it `screenshot.png`)_
+This project utilizes rich metadata:
 
-![App Screenshot](screenshot.png)
+- `feature_image`: Main product thumbnail
+- `selling_price`: Dynamic pricing (₹ or $)
+- `discount`: Used to identify top deals
+- `product_name`: Clean title
+- `meta_info`: Drives outfit suggestion logic
+- `style_attribute`: Used in multi-style outfit pairing
+- `pdp_url`: Direct product links
+- `launch_on`, `last_seen_date`: For identifying trends
+- `brand`, `sku`, `department_id`, `category_id`: For structured recommendations
 
 ---
 
@@ -58,45 +88,66 @@ Fashion e-commerce loses up to **65% of potential customers** due to poor search
 
 ```
 fashion-visual-search/
-├── fashion_app.py                # Streamlit app
-├── fashion_data_filtered.csv     # Inventory dataset
-├── fashion_features.npy          # Precomputed embeddings
-├── requirements.txt              # Python packages
-├── runtime.txt                   # Python version (for Streamlit)
-├── README.md                     # Project documentation
-├── .gitattributes                # Git LFS (optional)
+├── fashion_app.py                # Streamlit App
+├── fashion_data_filtered.csv     # Fashion dataset
+├── fashion_features.npy          # Precomputed image embeddings
+├── requirements.txt              # Package dependencies
+├── runtime.txt                   # Python runtime for Streamlit Cloud
+├── .gitattributes                # Git LFS tracked files
+├── README.md                     # Full documentation
 ```
 
 ---
 
-## 🛠️ How to Run Locally
+## 🛠️ Run Locally
 
 ```bash
-# 1. Clone the repo
 git clone https://github.com/PriyankTyagii/Owner-avatar-Fashion-Visual-Search-Intelligent-Styling-Assistant.git
 cd Owner-avatar-Fashion-Visual-Search-Intelligent-Styling-Assistant
 
-# 2. Install dependencies
 pip install -r requirements.txt
-
-# 3. Run the Streamlit app
 streamlit run fashion_app.py
 ```
 
 ---
 
-✅ Done! Your app is now live and shareable.
+## ☁️ Streamlit Cloud Deployment
+
+1. Push this repo to GitHub
+2. Go to [streamlit.io/cloud](https://streamlit.io/cloud)
+3. Click **“Deploy”**
+4. Set `fashion_app.py` as the main entry file
+
+✅ Streamlit Cloud will auto-install requirements and host your app.
 
 ---
 
-## 📃 License
+## ✅ Outcomes from Assignment
 
-This project is licensed under the **MIT License** — feel free to use, modify, and share.
+- ✅ Working Visual Search engine with high image match accuracy
+- ✅ Outfit logic based on fashion metadata
+- ✅ Live trending section based on `launch_on` & `discount`
+- ✅ Fully running prototype on the cloud
+- ✅ Designed to scale and extend
+
+---
+
+## 💡 Bonus Highlights
+
+- 📦 Ready to scale for 10,000+ users via Streamlit + optimized backend
+- 🧠 Designed for extension into trend-aware generative outfit builders
+- 💻 Works with Git LFS and supports large file inputs (CSV, NPY)
 
 ---
 
 ## 👤 Author
 
 **Priyank Tyagi**  
-👨‍💻 Passionate about AI, computer vision & intelligent systems  
-🔗 [LinkedIn](https://www.linkedin.com/in/priyanktyagi)
+🎓 B.Tech CSE | 🔬 AI & Machine Learning | 🧪 Product Innovator  
+🔗 [LinkedIn Profile](https://www.linkedin.com/in/priyank-tyagi-3a3a10259)
+
+---
+
+## 📃 License
+
+Licensed under the [MIT License](LICENSE) — free for research and commercial use.
