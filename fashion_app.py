@@ -311,7 +311,7 @@ st.markdown("""
 st.markdown("""
 <div class="main-header" role="banner">
     <h1 class="main-title">Fashion Visual Search</h1>
-    <p class="main-subtitle">Discover your perfect style with AI-powered visual search</p>
+    <p class="main-subtitle">Discover Your Perfect Style – Instantly with AI</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -573,7 +573,7 @@ else:
     st.markdown("""
     <div class="detail-card" style="text-align: center; padding: 4rem 2rem; margin-top: 2rem;">
         <h2 style="color: #1e293b; margin-bottom: 1rem; font-family: 'Playfair Display', serif;">
-            Welcome to Fashion Visual Search
+            Snap it. Search it. Style it.
         </h2>
         <p style="color: #64748b; font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
             Upload an image of any fashion item and discover similar products, style suggestions, and personalized recommendations powered by advanced AI technology.
@@ -594,6 +594,7 @@ else:
                 <h4 style="color: #1e293b; margin-bottom: 0.5rem;">Smart Recommendations</h4>
                 <p style="color: #64748b; font-size: 0.9rem;">Personalized for you</p>
             </div>
+                 </p><br>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -610,4 +611,3 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
-
