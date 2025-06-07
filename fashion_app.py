@@ -5,6 +5,7 @@ from PIL import Image
 from sklearn.metrics.pairwise import cosine_similarity
 from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
 from tensorflow.keras.preprocessing import image
+import gdown
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -346,7 +347,12 @@ def load_data():
         tuple(pandas.DataFrame, np.ndarray): Fashion data DataFrame and features array.
     """
     df = pd.read_csv("fashion_data_filtered.csv")
-    feats = np.load("fashion_features.npy")
+    # Download the fashion_features.npy file from Google Drive
+    url = 'https://drive.google.com/uc?id=1EbEim-d16D6P2aW-LqApjWfAmwE85iwY'
+    output_path = 'fashion_features.npy'
+    gdown.download(url, output_path, quiet=False)
+    
+    feats = np.load(output_path)
 
     # Rename columns for consistency if old names exist
     if "feature_image" not in df.columns and "feature_image_s3" in df.columns:
