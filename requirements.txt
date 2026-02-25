@@ -1,7 +1,7 @@
 streamlit
 pandas
-numpy
+numpy==1.24.3
 Pillow
 scikit-learn
-tensorflow
+tensorflow==2.13.0
 gdown

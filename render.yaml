@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: fashion-visual-search
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run fashion_app.py --server.port 10000 --server.address 0.0.0.0
