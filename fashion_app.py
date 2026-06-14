@@ -26,7 +26,65 @@ st.markdown("""<style>
 /* ── Base ── */
 .main { background: linear-gradient(145deg, #1a1a3e 0%, #4a1274 55%, #1a3a5e 100%); min-height: 100vh; }
 .block-container { padding: 0 2rem 4rem; max-width: 1400px; }
-#MainMenu, footer, header, .stDeployButton { visibility: hidden; }
+#MainMenu, footer, .stDeployButton { visibility: hidden; }
+/* keep header transparent (not hidden) so the collapsed-sidebar expand arrow stays clickable */
+header[data-testid="stHeader"] { background: transparent !important; }
+header[data-testid="stHeader"] .stToolbar, [data-testid="stToolbar"] { visibility: hidden; }
+
+/* ── Desktop: keep the sidebar permanently visible so it can never get stuck off-screen ── */
+@media (min-width: 768px) {
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"][aria-expanded="false"] {
+        transform: none !important; visibility: visible !important;
+        margin-left: 0 !important; left: 0 !important;
+        min-width: 300px !important; width: 300px !important;
+    }
+    /* hide the collapse (X) button so users can't hide the sidebar into an unrecoverable state */
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] { display: none !important; }
+}
+
+/* ── Mobile: allow collapsing, with a clearly visible expand button ── */
+@media (max-width: 767px) {
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] {
+        visibility: visible !important; display: block !important; opacity: 1 !important;
+        position: fixed !important; top: 0.6rem; left: 0.6rem; z-index: 1000000 !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] button,
+    [data-testid="collapsedControl"] button {
+        background: rgba(124,58,237,0.92) !important; border-radius: 10px !important;
+        width: 42px; height: 42px; box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] svg,
+    [data-testid="collapsedControl"] svg { color: #fff !important; fill: #fff !important; width: 22px; height: 22px; }
+
+    /* mobile-friendly typography & spacing */
+    .block-container { padding: 0 1rem 3rem !important; }
+    .app-header { padding: 1.75rem 1rem 1rem; }
+    .app-header h1 { font-size: 2rem; }
+    .app-header p { font-size: 0.85rem; }
+    .welcome { padding: 2.25rem 1.1rem; border-radius: 18px; }
+    .welcome h2 { font-size: 1.55rem; }
+    .welcome p { font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .sec-head { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
+    .match-name, .match-body > div { font-size: 1.4rem !important; }
+    .pcard-name { font-size: 0.9rem; }
+
+    /* center the search/upload and remove previews on mobile */
+    section[data-testid="stSidebar"] { text-align: center; }
+    section[data-testid="stSidebar"] [data-testid="stFileUploader"],
+    section[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] { text-align: center; }
+    .pills { display: none !important; }                                  /* hide feature preview cards */
+    section[data-testid="stSidebar"] [data-testid="stImage"] { display: none !important; } /* hide uploaded-image preview */
+
+    /* stack the large "Perfect Match" card vertically */
+    .match-wrap { flex-direction: column; }
+    .match-img { width: 100% !important; min-width: 0 !important; max-height: 320px; }
+    .match-body { padding: 1.5rem 1.25rem !important; }
+    .match-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; }
+}
 
 /* ── App header ── */
 .app-header { text-align: center; padding: 2.5rem 2rem 1.5rem; }
@@ -49,6 +107,21 @@ st.markdown("""<style>
     width: 4px; height: 1.3em;
     background: linear-gradient(180deg, #c4b5fd 0%, #7c3aed 100%);
     border-radius: 2px;
+}
+
+/* ── Product scroll row ── */
+.scroll-row {
+    display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.75rem;
+    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+}
+.scroll-row::-webkit-scrollbar { height: 4px; }
+.scroll-row::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.5); border-radius: 2px; }
+.scroll-row .pcard {
+    flex: 0 0 220px; scroll-snap-align: start;
+}
+@media (min-width: 768px) {
+    .scroll-row { overflow-x: visible; flex-wrap: wrap; }
+    .scroll-row .pcard { flex: 1 1 calc(25% - 0.75rem); min-width: 180px; max-width: calc(25% - 0.75rem); }
 }
 
 /* ── Product card ── */
@@ -125,6 +198,21 @@ st.markdown("""<style>
 .pill-num { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: rgba(255,255,255,0.2); margin-bottom: 0.6rem; line-height: 1; }
 .pill-title { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.2rem; color: #fff; }
 .pill-desc { font-size: 0.73rem; color: rgba(255,255,255,0.55); }
+
+/* ── Mobile upload section (shown inline on small screens) ── */
+.mobile-upload-wrap {
+    display: none;
+    text-align: center; margin-top: 1.5rem;
+}
+@media (max-width: 767px) {
+    .mobile-upload-wrap { display: block; }
+    /* hide the label text above the dropzone */
+    .mobile-upload-wrap [data-testid="stFileUploaderDropzoneInstructions"] span { display: none; }
+}
+/* hide the mobile uploader on desktop */
+@media (min-width: 768px) {
+    .mobile-upload-outer { display: none !important; }
+}
 
 /* ── Empty state ── */
 .empty-state {
@@ -282,17 +370,18 @@ def pcard_html(img_url, brand, name, price_str, discount, pdp_url) -> str:
 
 
 def render_grid(rows):
-    cols = st.columns(4, gap="medium")
-    for i, row in enumerate(rows[:4]):
-        with cols[i]:
-            st.markdown(pcard_html(
-                row["feature_image"],
-                row["brand"],
-                row["product_name"],
-                parse_price(row["selling_price"]),
-                row["discount"],
-                row.get("pdp_url") or "",
-            ), unsafe_allow_html=True)
+    cards = "".join(
+        pcard_html(
+            row["feature_image"],
+            row["brand"],
+            row["product_name"],
+            parse_price(row["selling_price"]),
+            row["discount"],
+            row.get("pdp_url") or "",
+        )
+        for row in rows[:4]
+    )
+    st.markdown(f'<div class="scroll-row">{cards}</div>', unsafe_allow_html=True)
 
 
 # ── Bootstrap ─────────────────────────────────────────────────────────────────
@@ -323,6 +412,20 @@ with st.sidebar:
             "- Single garment per photo\n"
             "- Front-facing angle"
         )
+
+
+# ── Mobile upload (centered, no preview — hidden on desktop via CSS) ──────────
+st.markdown('<div class="mobile-upload-outer">', unsafe_allow_html=True)
+mobile_file = st.file_uploader(
+    "Upload a fashion image",
+    type=["jpg", "jpeg", "png"],
+    label_visibility="collapsed",
+    key="mobile_uploader",
+)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# whichever uploader has a file wins
+uploaded_file = uploaded_file or mobile_file
 
 
 # ── Main content ──────────────────────────────────────────────────────────────
@@ -423,6 +526,9 @@ else:
         <h2>Snap it. Search it. Style it.</h2>
         <p>Upload any fashion photo and discover visually similar products,
            style suggestions, and AI-powered recommendations.</p>
+        <div class="mobile-upload-wrap">
+            <p style="color:rgba(255,255,255,0.5);font-size:0.82rem;margin-bottom:0.6rem;">Tap below to upload an image</p>
+        </div>
         <div class="pills">
             <div class="pill">
                 <div class="pill-num">01</div>
