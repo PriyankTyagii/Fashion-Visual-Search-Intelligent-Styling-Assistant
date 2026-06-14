@@ -13,7 +13,7 @@ import gdown
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Fashion Visual Search",
-    page_icon="👗",
+    page_icon="F",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -42,6 +42,13 @@ st.markdown("""<style>
     font-family: 'Playfair Display', serif;
     font-size: 1.55rem; font-weight: 600; color: #fff;
     margin: 2rem 0 0.9rem; letter-spacing: 0.01em;
+    display: flex; align-items: center; gap: 0.75rem;
+}
+.sec-head::before {
+    content: ''; display: block; flex-shrink: 0;
+    width: 4px; height: 1.3em;
+    background: linear-gradient(180deg, #c4b5fd 0%, #7c3aed 100%);
+    border-radius: 2px;
 }
 
 /* ── Product card ── */
@@ -115,8 +122,8 @@ st.markdown("""<style>
 .welcome p { color: rgba(255,255,255,0.7); font-size: 1rem; max-width: 500px; margin: 0 auto 3rem; line-height: 1.7; }
 .pills { display: flex; justify-content: center; gap: 1.25rem; flex-wrap: wrap; }
 .pill { background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.14); border-radius: 16px; padding: 1.25rem 1.75rem; color: #fff; min-width: 145px; }
-.pill-icon { font-size: 1.65rem; margin-bottom: 0.5rem; }
-.pill-title { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.2rem; }
+.pill-num { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: rgba(255,255,255,0.2); margin-bottom: 0.6rem; line-height: 1; }
+.pill-title { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.2rem; color: #fff; }
 .pill-desc { font-size: 0.73rem; color: rgba(255,255,255,0.55); }
 
 /* ── Empty state ── */
@@ -332,7 +339,7 @@ if uploaded_file:
     best = df.iloc[top_indices[0]]
 
     # ── Perfect match ─────────────────────────────────────────────────────────
-    st.markdown('<div class="sec-head">🎯 Perfect Match</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-head">Perfect Match</div>', unsafe_allow_html=True)
 
     e = _html.escape
     disc_badge = (
@@ -370,11 +377,11 @@ if uploaded_file:
     )
 
     # ── Similar products ──────────────────────────────────────────────────────
-    st.markdown('<div class="sec-head">✨ Similar Products</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-head">Similar Products</div>', unsafe_allow_html=True)
     render_grid([df.iloc[i] for i in top_indices[1:5]])
 
     # ── Style suggestions ─────────────────────────────────────────────────────
-    st.markdown('<div class="sec-head">👗 Style Suggestions</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-head">Style Suggestions</div>', unsafe_allow_html=True)
     try:
         style_kw = str(best["style_attribute"]).split(",")[0].strip().lower()
         outfit = df[df["style_attribute"].astype(str).str.lower().str.contains(style_kw, na=False)]
@@ -392,7 +399,7 @@ if uploaded_file:
         render_grid(outfit.to_dict("records"))
 
     # ── Trending now ──────────────────────────────────────────────────────────
-    st.markdown('<div class="sec-head">🔥 Trending Now</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-head">Trending Now</div>', unsafe_allow_html=True)
     df["launch_on"] = pd.to_datetime(df["launch_on"], errors="coerce")
     trendy = (
         df.dropna(subset=["launch_on"])
@@ -403,7 +410,7 @@ if uploaded_file:
 
     # ── Personalised picks ────────────────────────────────────────────────────
     if len(st.session_state.history) > 1:
-        st.markdown('<div class="sec-head">🧠 Just For You</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sec-head">Just For You</div>', unsafe_allow_html=True)
         avg_feat = np.mean(st.session_state.history, axis=0)
         rec_sims = cosine_similarity([avg_feat], feats)[0]
         rec_indices = rec_sims.argsort()[-5:][::-1]
@@ -418,22 +425,22 @@ else:
            style suggestions, and AI-powered recommendations.</p>
         <div class="pills">
             <div class="pill">
-                <div class="pill-icon">🔍</div>
+                <div class="pill-num">01</div>
                 <div class="pill-title">Visual Search</div>
                 <div class="pill-desc">Find exact matches</div>
             </div>
             <div class="pill">
-                <div class="pill-icon">👗</div>
+                <div class="pill-num">02</div>
                 <div class="pill-title">Style Suggestions</div>
                 <div class="pill-desc">Complete your look</div>
             </div>
             <div class="pill">
-                <div class="pill-icon">🔥</div>
+                <div class="pill-num">03</div>
                 <div class="pill-title">Trending Now</div>
                 <div class="pill-desc">Stay on trend</div>
             </div>
             <div class="pill">
-                <div class="pill-icon">🧠</div>
+                <div class="pill-num">04</div>
                 <div class="pill-title">Personalised</div>
                 <div class="pill-desc">Made for you</div>
             </div>
@@ -445,6 +452,6 @@ else:
 # ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="app-footer">
-    Built with ❤️ by <strong>PRIYANK TYAGI</strong> &nbsp;·&nbsp; Fashion ML Visual Search
+    Built by <strong>PRIYANK TYAGI</strong> &nbsp;·&nbsp; Fashion ML Visual Search
 </div>
 """, unsafe_allow_html=True)
