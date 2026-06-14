@@ -46,9 +46,14 @@ _generate_pwa_icons()
 
 
 # ── Page config ───────────────────────────────────────────────────────────────
+try:
+    favicon = Image.open("static/icon-192.png")
+except Exception:
+    favicon = "📷"
+
 st.set_page_config(
     page_title="Visual Search Engine",
-    page_icon="static/icon-192.png",
+    page_icon=favicon,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -248,8 +253,6 @@ header[data-testid="stHeader"] .stToolbar, [data-testid="stToolbar"] { visibilit
 @media (min-width: 768px) {
     .mobile-upload-outer { display: none !important; }
     section[data-testid="stMain"] [data-testid="stFileUploader"] { display: none !important; }
-    section[data-testid="stMain"] [data-testid="stCameraInput"] { display: none !important; }
-    section[data-testid="stMain"] [data-testid="stRadio"] { display: none !important; }
 }
 
 /* ── Empty state ── */
@@ -537,38 +540,17 @@ if "history" not in st.session_state:
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### Search Fashion Image")
-    st.markdown("Upload a photo or capture one with your camera to find visually similar products instantly.")
+    st.markdown("### Upload a Fashion Image")
+    st.markdown("Drop any photo to find visually similar products instantly.")
 
-    input_source = st.radio(
-        "Select input source",
-        options=["Upload Image", "Capture Image"],
-        horizontal=True,
+    uploaded_file = st.file_uploader(
+        "Choose an image",
+        type=["jpg", "jpeg", "png"],
         label_visibility="collapsed",
-        key="sidebar_source"
     )
 
-    uploaded_file = None
-    captured_file = None
-
-    if input_source == "Upload Image":
-        uploaded_file = st.file_uploader(
-            "Choose an image",
-            type=["jpg", "jpeg", "png"],
-            label_visibility="collapsed",
-            key="sidebar_uploader",
-        )
-    else:
-        captured_file = st.camera_input(
-            "Take a picture",
-            label_visibility="collapsed",
-            key="sidebar_camera",
-        )
-
-    active_file = uploaded_file or captured_file
-
-    if active_file:
-        img_preview = Image.open(active_file).convert("RGB")
+    if uploaded_file:
+        img_preview = Image.open(uploaded_file).convert("RGB")
         st.image(img_preview, use_container_width=True, caption="Your image")
         st.markdown("---")
         st.markdown(
@@ -581,34 +563,16 @@ with st.sidebar:
 
 # ── Mobile upload (centered, no preview — hidden on desktop via CSS) ──────────
 st.markdown('<div class="mobile-upload-outer">', unsafe_allow_html=True)
-mobile_source = st.radio(
-    "Select input source",
-    options=["Upload Image", "Capture Image"],
-    horizontal=True,
+mobile_file = st.file_uploader(
+    "Upload a fashion image",
+    type=["jpg", "jpeg", "png"],
     label_visibility="collapsed",
-    key="mobile_source",
+    key="mobile_uploader",
 )
-
-mobile_file = None
-mobile_captured = None
-
-if mobile_source == "Upload Image":
-    mobile_file = st.file_uploader(
-        "Upload a fashion image",
-        type=["jpg", "jpeg", "png"],
-        label_visibility="collapsed",
-        key="mobile_uploader",
-    )
-else:
-    mobile_captured = st.camera_input(
-        "Take a picture",
-        label_visibility="collapsed",
-        key="mobile_camera",
-    )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# whichever uploader/camera has a file wins
-uploaded_file = active_file or mobile_file or mobile_captured
+# whichever uploader has a file wins
+uploaded_file = uploaded_file or mobile_file
 
 
 # ── Main content ──────────────────────────────────────────────────────────────
