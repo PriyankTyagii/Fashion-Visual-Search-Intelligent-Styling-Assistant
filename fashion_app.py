@@ -3,11 +3,33 @@ import html as _html
 import streamlit as st
 import pandas as pd
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from sklearn.metrics.pairwise import cosine_similarity
 from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
 from tensorflow.keras.preprocessing import image
 import gdown
+
+
+def _generate_pwa_icons():
+    os.makedirs("static", exist_ok=True)
+    for size in (192, 512):
+        path = f"static/icon-{size}.png"
+        if os.path.exists(path):
+            continue
+        icon = Image.new("RGB", (size, size), (124, 58, 237))
+        draw = ImageDraw.Draw(icon)
+        fs = int(size * 0.52)
+        try:
+            font = ImageFont.truetype("arial.ttf", fs)
+        except Exception:
+            font = ImageFont.load_default()
+        bbox = draw.textbbox((0, 0), "F", font=font)
+        x = (size - (bbox[2] - bbox[0])) // 2 - bbox[0]
+        y = (size - (bbox[3] - bbox[1])) // 2 - bbox[1]
+        draw.text((x, y), "F", fill="white", font=font)
+        icon.save(path)
+
+_generate_pwa_icons()
 
 
 # ── Page config ───────────────────────────────────────────────────────────────
@@ -233,6 +255,112 @@ header[data-testid="stHeader"] .stToolbar, [data-testid="stToolbar"] { visibilit
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.5); border-radius: 3px; }
 </style>""", unsafe_allow_html=True)
+
+
+# ── PWA: manifest link, meta tags, service worker, install bubble ──────────────
+st.markdown("""
+<link rel="manifest" href="/app/static/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FashionAI">
+<meta name="theme-color" content="#7c3aed">
+<link rel="apple-touch-icon" href="/app/static/icon-192.png">
+
+<style>
+#pwa-bubble {
+    position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%);
+    z-index: 9999999;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    color: #fff; border-radius: 50px;
+    padding: 0.75rem 1.25rem 0.75rem 1rem;
+    box-shadow: 0 8px 32px rgba(124,58,237,0.45);
+    display: none; align-items: center; gap: 0.75rem;
+    font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 600;
+    white-space: nowrap;
+}
+@keyframes bubble-in {
+    from { opacity:0; transform: translateX(-50%) translateY(24px); }
+    to   { opacity:1; transform: translateX(-50%) translateY(0); }
+}
+#pwa-bubble.visible {
+    display: flex;
+    animation: bubble-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+#pwa-install-btn {
+    background: rgba(255,255,255,0.22); border: none; color: #fff;
+    font-size: 0.82rem; font-weight: 700; padding: 0.38rem 0.9rem;
+    border-radius: 30px; cursor: pointer; transition: background 0.2s;
+}
+#pwa-install-btn:hover { background: rgba(255,255,255,0.35); }
+#pwa-close-btn {
+    background: none; border: none; color: rgba(255,255,255,0.7);
+    font-size: 1.1rem; cursor: pointer; padding: 0 0.15rem; line-height: 1;
+}
+@media (min-width: 768px) { #pwa-bubble { display: none !important; } }
+</style>
+
+<div id="pwa-bubble">
+    &#128242;&nbsp; Install App
+    <button id="pwa-install-btn" onclick="pwaBubbleInstall()">Install</button>
+    <button id="pwa-close-btn" onclick="pwaBubbleClose()">&#x2715;</button>
+</div>
+
+<script>
+(function() {
+    var deferredPrompt = null;
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                    || !!window.navigator.standalone;
+
+    // Don't show if already installed or dismissed this session
+    if (isStandalone || sessionStorage.getItem('pwa-dismissed')) return;
+
+    // Try to register service worker (needed for Chrome install criteria on HTTPS)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/app/static/sw.js').catch(function(){});
+    }
+
+    // Capture Chrome/Android native install prompt
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+    });
+
+    // Show bubble unconditionally on mobile after page settles
+    function showBubble() {
+        if (sessionStorage.getItem('pwa-dismissed')) return;
+        var b = document.getElementById('pwa-bubble');
+        if (b) b.classList.add('visible');
+    }
+    // Try immediately, and again after a delay in case DOM isn't ready yet
+    showBubble();
+    setTimeout(showBubble, 1500);
+    document.addEventListener('DOMContentLoaded', showBubble);
+
+    window.pwaBubbleInstall = function() {
+        if (deferredPrompt) {
+            // Chrome Android with HTTPS — native dialog
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function() {
+                deferredPrompt = null;
+                pwaBubbleClose();
+            });
+        } else if (isIOS) {
+            alert('To install:\n1. Tap the Share button (box with arrow) in Safari\n2. Tap "Add to Home Screen"\n3. Tap "Add"');
+        } else {
+            alert('To install:\n1. Tap the browser menu (⋮ or ...)\n2. Tap "Add to Home screen" or "Install app"\n3. Tap "Add"');
+        }
+    };
+
+    window.pwaBubbleClose = function() {
+        var b = document.getElementById('pwa-bubble');
+        if (b) b.classList.remove('visible');
+        sessionStorage.setItem('pwa-dismissed', '1');
+    };
+})();
+</script>
+""", unsafe_allow_html=True)
 
 
 # ── Header ────────────────────────────────────────────────────────────────────
