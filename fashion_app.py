@@ -231,9 +231,10 @@ header[data-testid="stHeader"] .stToolbar, [data-testid="stToolbar"] { visibilit
     /* hide the label text above the dropzone */
     .mobile-upload-wrap [data-testid="stFileUploaderDropzoneInstructions"] span { display: none; }
 }
-/* hide the mobile uploader on desktop */
+/* hide the mobile uploader (in main content) on desktop — sidebar uploader is unaffected */
 @media (min-width: 768px) {
     .mobile-upload-outer { display: none !important; }
+    section[data-testid="stMain"] [data-testid="stFileUploader"] { display: none !important; }
 }
 
 /* ── Empty state ── */
