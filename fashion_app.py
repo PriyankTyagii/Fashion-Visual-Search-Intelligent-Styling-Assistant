@@ -1,3 +1,5 @@
+import os
+import html as _html
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,613 +9,442 @@ from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
 from tensorflow.keras.preprocessing import image
 import gdown
 
-# --- Page Configuration ---
+
+# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Fashion Visual Search",
     page_icon="👗",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# --- Custom CSS ---
+
+# ── CSS ───────────────────────────────────────────────────────────────────────
+st.markdown("""<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+/* ── Base ── */
+.main { background: linear-gradient(145deg, #1a1a3e 0%, #4a1274 55%, #1a3a5e 100%); min-height: 100vh; }
+.block-container { padding: 0 2rem 4rem; max-width: 1400px; }
+#MainMenu, footer, header, .stDeployButton { visibility: hidden; }
+
+/* ── App header ── */
+.app-header { text-align: center; padding: 2.5rem 2rem 1.5rem; }
+.app-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem; font-weight: 700; color: #fff;
+    letter-spacing: -0.02em; margin: 0 0 0.4rem;
+}
+.app-header p { font-size: 1rem; color: rgba(255,255,255,0.6); font-weight: 300; margin: 0; }
+
+/* ── Section heading ── */
+.sec-head {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.55rem; font-weight: 600; color: #fff;
+    margin: 2rem 0 0.9rem; letter-spacing: 0.01em;
+}
+
+/* ── Product card ── */
+.pcard {
+    background: #fff; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.09);
+    display: flex; flex-direction: column; height: 100%;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.pcard:hover { transform: translateY(-5px); box-shadow: 0 12px 36px rgba(0,0,0,0.17); }
+.pcard-img { width: 100%; aspect-ratio: 3/4; overflow: hidden; background: #f3f4f6; }
+.pcard-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s; }
+.pcard:hover .pcard-img img { transform: scale(1.05); }
+.pcard-body { padding: 0.8rem 0.9rem 0.9rem; display: flex; flex-direction: column; flex: 1; }
+.pcard-brand { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #a78bfa; margin-bottom: 0.2rem; }
+.pcard-name {
+    font-size: 0.82rem; font-weight: 500; color: #111827; line-height: 1.35; flex: 1;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin-bottom: 0.4rem;
+}
+.pcard-price-row { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.7rem; }
+.pcard-price { font-size: 0.88rem; font-weight: 700; color: #059669; }
+.pcard-off { font-size: 0.62rem; font-weight: 700; background: #fef2f2; color: #dc2626; padding: 0.15rem 0.4rem; border-radius: 4px; }
+.pcard-btn {
+    display: block; text-align: center; background: #111827; color: #fff !important;
+    text-decoration: none !important; font-size: 0.73rem; font-weight: 600;
+    letter-spacing: 0.05em; padding: 0.5rem; border-radius: 8px; transition: background 0.2s;
+}
+.pcard-btn:hover { background: #7c3aed; }
+
+/* ── Top match card ── */
+.match-wrap {
+    background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 8px 48px rgba(0,0,0,0.2); display: flex; margin-bottom: 2rem;
+}
+.match-img { width: 360px; min-width: 260px; max-height: 540px; flex-shrink: 0; overflow: hidden; }
+.match-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.match-body {
+    padding: 2.5rem 2.75rem; flex: 1;
+    display: flex; flex-direction: column; justify-content: center; overflow: auto;
+}
+.match-eyebrow {
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #7c3aed; background: #ede9fe; display: inline-block;
+    padding: 0.25rem 0.65rem; border-radius: 20px; margin-bottom: 0.75rem; width: fit-content;
+}
+.match-brand { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #9ca3af; margin-bottom: 0.3rem; }
+.match-name { font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 700; color: #111827; line-height: 1.2; margin-bottom: 0.9rem; }
+.match-price-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.4rem; }
+.match-price { font-size: 1.55rem; font-weight: 700; color: #059669; }
+.match-disc { background: #dc2626; color: #fff; font-size: 0.72rem; font-weight: 700; padding: 0.28rem 0.65rem; border-radius: 20px; }
+.match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 2rem; margin-bottom: 1.1rem; }
+.match-field label { display: block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; margin-bottom: 0.1rem; }
+.match-field span { font-size: 0.83rem; color: #374151; }
+.match-desc { font-size: 0.83rem; color: #6b7280; line-height: 1.65; margin-bottom: 1.4rem; border-left: 3px solid #ede9fe; padding-left: 0.75rem; }
+.match-cta {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: #111827; color: #fff !important; text-decoration: none !important;
+    font-weight: 700; font-size: 0.83rem; letter-spacing: 0.05em;
+    padding: 0.82rem 1.75rem; border-radius: 10px; width: fit-content; transition: all 0.2s;
+}
+.match-cta:hover { background: #7c3aed; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.3); }
+
+/* ── Welcome page ── */
+.welcome {
+    background: rgba(255,255,255,0.06); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 24px;
+    padding: 5rem 3rem; text-align: center; margin-top: 1.5rem;
+}
+.welcome h2 { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: #fff; margin: 0 0 1rem; }
+.welcome p { color: rgba(255,255,255,0.7); font-size: 1rem; max-width: 500px; margin: 0 auto 3rem; line-height: 1.7; }
+.pills { display: flex; justify-content: center; gap: 1.25rem; flex-wrap: wrap; }
+.pill { background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.14); border-radius: 16px; padding: 1.25rem 1.75rem; color: #fff; min-width: 145px; }
+.pill-icon { font-size: 1.65rem; margin-bottom: 0.5rem; }
+.pill-title { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.2rem; }
+.pill-desc { font-size: 0.73rem; color: rgba(255,255,255,0.55); }
+
+/* ── Empty state ── */
+.empty-state {
+    background: rgba(255,255,255,0.06); border: 1px dashed rgba(255,255,255,0.2);
+    border-radius: 14px; padding: 2.5rem; text-align: center;
+    color: rgba(255,255,255,0.5); font-size: 0.88rem;
+}
+
+/* ── Footer ── */
+.app-footer {
+    text-align: center; color: rgba(255,255,255,0.35); font-size: 0.78rem;
+    padding: 2rem 0 0; margin-top: 3rem; border-top: 1px solid rgba(255,255,255,0.08);
+}
+.app-footer strong { color: rgba(255,255,255,0.65); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.5); border-radius: 3px; }
+</style>""", unsafe_allow_html=True)
+
+
+# ── Header ────────────────────────────────────────────────────────────────────
 st.markdown("""
-<style>
-    /* Import modern fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
-
-    /* Global styles */
-    .main {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-    }
-    
-    .block-container {
-        padding: 2rem 1rem;
-        max-width: 1400px;
-    }
-    
-    /* Header styles */
-    .main-header {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border-radius: 20px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    .main-title {
-        font-family: 'Playfair Display', serif;
-        font-size: 3rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-align: center;
-        margin-bottom: 0.5rem;
-    }
-    
-    .main-subtitle {
-        font-family: 'Inter', sans-serif;
-        font-size: 1.2rem;
-        color: #64748b;
-        text-align: center;
-        font-weight: 300;
-    }
-    
-    /* Sidebar styles */
-    .css-1d391kg {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-    }
-    
-    /* Card styles */
-    .product-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
-    }
-    
-    .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    }
-    
-    .section-header {
-        font-family: 'Playfair Display', serif;
-        font-size: 2rem;
-        font-weight: 600;
-        color: white;
-        margin: 2rem 0 1rem 0;
-        text-align: center;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    
-    /* Product grid styles */
-    .product-grid-item {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        border-radius: 12px;
-        padding: 1rem;
-        transition: all 0.3s ease;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .product-grid-item:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-    }
-    
-    .product-image {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-        border-radius: 8px;
-        margin-bottom: 0.75rem;
-        transition: transform 0.3s ease;
-    }
-    
-    .product-image:hover {
-        transform: scale(1.05);
-    }
-    
-    .product-brand {
-        font-family: 'Inter', sans-serif;
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: #1e293b;
-        margin-bottom: 0.25rem;
-    }
-    
-    .product-price {
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        color: #059669;
-        font-size: 0.85rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .product-link {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        text-decoration: none;
-        font-size: 0.8rem;
-        font-weight: 500;
-        text-align: center;
-        transition: all 0.3s ease;
-        margin-top: auto;
-        user-select: none;
-        display: inline-block;
-    }
-    
-    .product-link:hover,
-    .product-link:focus {
-        transform: translateY(-1px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        text-decoration: none;
-        color: white;
-        outline-offset: 2px;
-        outline: 2px solid transparent;
-    }
-    .product-link:focus-visible {
-        outline-color: #667eea;
-    }
-    
-    /* Detail card styles */
-    .detail-card {
-        background: #ffffff;
-        border-radius: 0.75rem;
-        padding: 3rem 2.5rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        max-width: 1200px;
-        margin-left: auto;
-        margin-right: auto;
-        font-family: 'Inter', sans-serif;
-        color: #6b7280;
-        line-height: 1.6;
-    }
-    
-    .detail-title {
-        font-family: 'Playfair Display', serif;
-        font-size: 3rem;
-        font-weight: 800;
-        color: #111827;
-        margin-bottom: 1.2rem;
-        line-height: 1.1;
-    }
-    
-    .detail-item {
-        margin-bottom: 1rem;
-        font-size: 1rem;
-    }
-    
-    .detail-label {
-        font-weight: 600;
-        color: #374151;
-    }
-    
-    .price-highlight {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #059669;
-        margin-right: 1rem;
-        vertical-align: middle;
-    }
-    
-    .discount-badge {
-        background: #ef4444;
-        color: white;
-        padding: 0.3rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        vertical-align: middle;
-        display: inline-block;
-    }
-    
-    .view-product-btn {
-        background-color: #111827;
-        color: white;
-        padding: 1rem 2.5rem;
-        border-radius: 0.5rem;
-        text-decoration: none;
-        font-weight: 700;
-        font-size: 1.1rem;
-        transition: all 0.3s ease;
-        display: inline-block;
-        margin-top: 2rem;
-        user-select: none;
-        text-align: center;
-    }
-    
-    .view-product-btn:hover,
-    .view-product-btn:focus {
-        background-color: #374151;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-        text-decoration: none;
-        color: white;
-        outline-offset: 2px;
-        outline: 2px solid transparent;
-    }
-    
-    .view-product-btn:focus-visible {
-        outline-color: #667eea;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .detail-card {
-            padding: 2rem 1.5rem;
-        }
-        .detail-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-    }
-
-    /* Loading animation */
-    .loading-spinner {
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        border-top: 3px solid #667eea;
-        width: 30px;
-        height: 30px;
-        animation: spin 1s linear infinite;
-        margin: 0 auto;
-    }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    /* Hide Streamlit elements */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    .stDeployButton {display: none;}
-    
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-        width: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# --- Header ---
-st.markdown("""
-<div class="main-header" role="banner">
-    <h1 class="main-title">Fashion Visual Search</h1>
-    <p class="main-subtitle">Discover Your Perfect Style – Instantly with AI</p>
+<div class="app-header">
+    <h1>Fashion Visual Search</h1>
+    <p>Discover your perfect style – instantly with AI</p>
 </div>
 """, unsafe_allow_html=True)
 
 
+# ── ML helpers ────────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def load_model():
-    """Load the pretrained ResNet50 model with pooling, without top."""
     return ResNet50(weights="imagenet", include_top=False, pooling="avg")
 
 
 def extract_features(img: Image.Image) -> np.ndarray:
-    """
-    Extract feature vector from a PIL image using the ResNet50 model.
-    Args:
-        img (PIL.Image.Image): Input image.
-    Returns:
-        np.ndarray: Flattened feature vector extracted from the image.
-    """
     img = img.resize((224, 224))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
-    features = model.predict(x)
-    return features.flatten()
+    return model.predict(x).flatten()
 
 
 @st.cache_data(show_spinner=False)
 def load_data():
-    """
-    Load fashion dataset and features from disk, apply column renaming and cleaning.
-    Returns:
-        tuple(pandas.DataFrame, np.ndarray): Fashion data DataFrame and features array.
-    """
     df = pd.read_csv("fashion_data_filtered.csv")
-    # Download the fashion_features.npy file from Google Drive
-    url = 'https://drive.google.com/uc?id=1EbEim-d16D6P2aW-LqApjWfAmwE85iwY'
-    output_path = 'fashion_features.npy'
-    gdown.download(url, output_path, quiet=False)
-    
+
+    output_path = "fashion_features.npy"
+    if not os.path.exists(output_path):
+        url = "https://drive.google.com/uc?id=1EbEim-d16D6P2aW-LqApjWfAmwE85iwY"
+        gdown.download(url, output_path, quiet=False)
+
     feats = np.load(output_path)
 
-    # Rename columns for consistency if old names exist
     if "feature_image" not in df.columns and "feature_image_s3" in df.columns:
         df.rename(columns={"feature_image_s3": "feature_image"}, inplace=True)
     if "style_attribute" not in df.columns and "style_attributes" in df.columns:
         df.rename(columns={"style_attributes": "style_attribute"}, inplace=True)
 
     df.dropna(subset=["feature_image"], inplace=True)
-
     return df, feats
 
 
-# Initialize model once
-model = load_model()
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-# --- Sidebar ---
-with st.sidebar:
-    st.markdown("### 📤 Upload Your Fashion Image")
-    st.markdown("Upload an image to find similar fashion items")
-    
-    uploaded_file = st.file_uploader(
-        "Choose an image",
-        type=["jpg", "jpeg", "png"],
-        help="Upload a clear image of a fashion item"
-    )
-    
-    if uploaded_file:
-        img = Image.open(uploaded_file).convert("RGB")
-        st.markdown("---")
-        st.markdown("### 📸 Your Image")
-        st.image(img, use_container_width=True, caption="Uploaded Image")
-
-
+# ── Display helpers ───────────────────────────────────────────────────────────
 def parse_price(val) -> str:
-    """
-    Format price information from various possible data styles to a string with currency symbol.
-    Args:
-        val: Value representing price, could be string, dict, int, or float.
-    Returns:
-        str: Formatted price string.
-    """
     try:
         d = eval(str(val)) if isinstance(val, str) else val
         if isinstance(d, dict):
             if "INR" in d:
                 return f"₹{d['INR']:,.0f}"
-            elif "USD" in d:
+            if "USD" in d:
                 return f"${d['USD']:,.2f}"
     except Exception:
         pass
-
     if isinstance(val, (int, float)):
         return f"₹{val:,.0f}"
-
     return f"₹{val}"
 
 
 def parse_list(val) -> str:
-    """
-    Parse a string representation of a list and return a comma-separated string.
-    If parsing fails, return the string as-is.
-    Args:
-        val: List-like string.
-    Returns:
-        str: Comma separated string or original string.
-    """
     try:
-        l = eval(str(val))
-        if isinstance(l, list):
-            return ", ".join(str(i) for i in l)
+        lst = eval(str(val))
+        if isinstance(lst, list):
+            return ", ".join(str(i) for i in lst if str(i).strip())
     except Exception:
         pass
     return str(val)
 
 
 def parse_dict(val) -> str:
-    """
-    Parse a string representation of a dictionary and format it for display.
-    If parsing fails, return the string as-is.
-    Args:
-        val: Dictionary-like string.
-    Returns:
-        str: Formatted multi-line string or original string.
-    """
     try:
         d = eval(str(val))
         if isinstance(d, dict):
-            return "  \n".join([f"**{k}**: {v}" for k, v in d.items()])
+            return "  \n".join(f"**{k}**: {v}" for k, v in d.items())
     except Exception:
         pass
     return str(val)
 
 
-# --- Main Content ---
+def parse_dict_html(val) -> str:
+    """Like parse_dict but returns escaped HTML — no markdown markers."""
+    e = _html.escape
+    try:
+        d = eval(str(val))
+        if isinstance(d, dict) and d:
+            return " &nbsp;·&nbsp; ".join(
+                f"<strong>{e(str(k))}</strong>: {e(str(v))}" for k, v in d.items()
+            )
+    except Exception:
+        pass
+    return ""
+
+
+def safe_str(val) -> str:
+    """Return empty string for NaN/None, otherwise string."""
+    if val is None:
+        return ""
+    try:
+        import math
+        if isinstance(val, float) and math.isnan(val):
+            return ""
+    except Exception:
+        pass
+    s = str(val)
+    return "" if s.lower() == "nan" else s
+
+
+def pcard_html(img_url, brand, name, price_str, discount, pdp_url) -> str:
+    e = _html.escape
+    img_url  = safe_str(img_url)
+    brand    = safe_str(brand)
+    name     = safe_str(name)
+    pdp_url  = safe_str(pdp_url)
+    try:
+        disc_val = float(discount)
+    except (TypeError, ValueError):
+        disc_val = 0.0
+    badge = f'<span class="pcard-off">{disc_val:.0f}% OFF</span>' if disc_val else ""
+    btn = (
+        f'<a href="{e(pdp_url)}" target="_blank" rel="noopener noreferrer" class="pcard-btn">View Product →</a>'
+        if pdp_url else ""
+    )
+    return (
+        f'<div class="pcard">'
+        f'<div class="pcard-img"><img src="{e(img_url)}" alt="{e(name)}" loading="lazy"/></div>'
+        f'<div class="pcard-body">'
+        f'<div class="pcard-brand" style="color:#a78bfa;">{e(brand)}</div>'
+        f'<div class="pcard-name" style="color:#111827;">{e(name)}</div>'
+        f'<div class="pcard-price-row"><span class="pcard-price" style="color:#059669;">{price_str}</span>{badge}</div>'
+        f'{btn}'
+        f'</div></div>'
+    )
+
+
+def render_grid(rows):
+    cols = st.columns(4, gap="medium")
+    for i, row in enumerate(rows[:4]):
+        with cols[i]:
+            st.markdown(pcard_html(
+                row["feature_image"],
+                row["brand"],
+                row["product_name"],
+                parse_price(row["selling_price"]),
+                row["discount"],
+                row.get("pdp_url") or "",
+            ), unsafe_allow_html=True)
+
+
+# ── Bootstrap ─────────────────────────────────────────────────────────────────
+model = load_model()
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("### Upload a Fashion Image")
+    st.markdown("Drop any photo to find visually similar products instantly.")
+
+    uploaded_file = st.file_uploader(
+        "Choose an image",
+        type=["jpg", "jpeg", "png"],
+        label_visibility="collapsed",
+    )
+
+    if uploaded_file:
+        img_preview = Image.open(uploaded_file).convert("RGB")
+        st.image(img_preview, use_container_width=True, caption="Your image")
+        st.markdown("---")
+        st.markdown(
+            "**Tips for best results**\n"
+            "- Well-lit, clear shots\n"
+            "- Single garment per photo\n"
+            "- Front-facing angle"
+        )
+
+
+# ── Main content ──────────────────────────────────────────────────────────────
 if uploaded_file:
-    # Reuse opened image from sidebar upload to avoid reopening
     img = Image.open(uploaded_file).convert("RGB")
-    
-    with st.spinner("🔍 Analyzing your image and finding matches..."):
+
+    with st.spinner("Analysing your image…"):
         df, feats = load_data()
         query_feat = extract_features(img)
-        similarities = cosine_similarity([query_feat], feats)[0]
-        top_indices = similarities.argsort()[-6:][::-1]
+        sims = cosine_similarity([query_feat], feats)[0]
+        top_indices = sims.argsort()[-6:][::-1]
         st.session_state.history.append(query_feat)
 
     best = df.iloc[top_indices[0]]
 
-    # --- Top Match Section ---
-    st.markdown('<h2 class="section-header">🎯 Perfect Match</h2>', unsafe_allow_html=True)
-    
-    st.markdown(f'''
-    <section class="detail-card" aria-labelledby="product-name" role="region">
-        <div style="display:flex; flex-wrap: wrap; gap: 2.5rem; align-items: start;">
-            <img src="{best["feature_image"]}" alt="Image of {best['product_name']}" 
-                style="width: 350px; height: auto; border-radius: 0.75rem; object-fit: cover; box-shadow: 0 8px 20px rgba(0,0,0,0.06);" />
-            <div style="flex: 1 1 550px; min-width: 280px;">
-                <h3 id="product-name" class="detail-title" style="margin-top:0;">{best['product_name']}</h3>
-                <p class="detail-item"><span class="detail-label">Brand:</span> {best['brand']}</p>
-                <p class="detail-item" style="margin-top: 0; margin-bottom: 1.2rem;">
-                    <span class="price-highlight">{parse_price(best['selling_price'])}</span>
-                    <span class="discount-badge">{best['discount']}% OFF</span>
-                </p>
-                <p class="detail-item"><span class="detail-label">Category:</span> {best['category_id']} | {best['department_id']}</p>
-                <p class="detail-item"><span class="detail-label">Features:</span> {parse_list(best['feature_list'])}</p>
-                <p class="detail-item" style="margin-bottom: 1.2rem;"><span class="detail-label">Description:</span> {best['description']}</p>
-                <p class="detail-item"><span class="detail-label">Style Attributes:</span><br>{parse_dict(best['style_attribute'])}</p>
-                {f'<a href="{best["pdp_url"]}" target="_blank" rel="noopener noreferrer" class="view-product-btn" role="button" tabindex="0">🛍️ View Product</a>' if best["pdp_url"] else ""}
-            </div>
-        </div>
-    </section>
-    ''', unsafe_allow_html=True)
+    # ── Perfect match ─────────────────────────────────────────────────────────
+    st.markdown('<div class="sec-head">🎯 Perfect Match</div>', unsafe_allow_html=True)
 
-    # --- Similar Products Section ---
-    st.markdown('<h2 class="section-header">✨ Similar Products</h2>', unsafe_allow_html=True)
-    
-    cols = st.columns(5, gap="medium")
-    for i, idx in enumerate(top_indices[1:]):
-        prod = df.iloc[idx]
-        with cols[i]:
-            st.markdown(f"""
-            <div class="product-grid-item" role="listitem">
-                <img src="{prod['feature_image']}" class="product-image" alt="{prod['product_name']}"/>
-                <div class="product-brand">{prod['brand']}</div>
-                <div class="product-price">{parse_price(prod['selling_price'])} • {prod['discount']}% off</div>
-                {f'<a href="{prod["pdp_url"]}" target="_blank" rel="noopener noreferrer" class="product-link" role="link" tabindex="0">View Product</a>' if prod["pdp_url"] else ""}
-            </div>
-            """, unsafe_allow_html=True)
+    e = _html.escape
+    disc_badge = (
+        f'<span class="match-disc">{float(best["discount"]):.0f}% OFF</span>'
+        if best["discount"] else ""
+    )
+    pdp = safe_str(best.get("pdp_url", ""))
+    cta = (
+        f'<a href="{e(pdp)}" target="_blank" rel="noopener noreferrer" class="match-cta">Shop Now →</a>'
+        if pdp else ""
+    )
+    style_html   = parse_dict_html(best["style_attribute"]) or "—"
+    feat_snippet = e(parse_list(best["feature_list"])[:160])
+    description  = e(safe_str(best["description"]))
 
-    # --- Outfit Suggestions Section ---
-    st.markdown('<h2 class="section-header">👗 Style Suggestions</h2>', unsafe_allow_html=True)
-    
+    st.markdown(
+        f'<div class="match-wrap">'
+          f'<div class="match-img"><img src="{e(safe_str(best["feature_image"]))}" alt="{e(safe_str(best["product_name"]))}"/></div>'
+          f'<div class="match-body">'
+            f'<div class="match-eyebrow">Best Match</div>'
+            f'<div class="match-brand" style="font-size:.75rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;margin-bottom:.3rem;">{e(safe_str(best["brand"]))}</div>'
+            f'<div style="font-family:\'Playfair Display\',serif;font-size:1.9rem;font-weight:700;color:#111827;line-height:1.2;margin-bottom:.9rem;">{e(safe_str(best["product_name"]))}</div>'
+            f'<div class="match-price-row"><span class="match-price">{parse_price(best["selling_price"])}</span>{disc_badge}</div>'
+            f'<div class="match-grid">'
+              f'<div class="match-field"><label style="display:block;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:.1rem;">Category</label><span style="font-size:.83rem;color:#374151;">{e(safe_str(best["category_id"]))}</span></div>'
+              f'<div class="match-field"><label style="display:block;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:.1rem;">Department</label><span style="font-size:.83rem;color:#374151;">{e(safe_str(best["department_id"]))}</span></div>'
+              f'<div class="match-field"><label style="display:block;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:.1rem;">Features</label><span style="font-size:.83rem;color:#374151;">{feat_snippet}{"…" if len(feat_snippet) >= 160 else ""}</span></div>'
+              f'<div class="match-field"><label style="display:block;font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:.1rem;">Style</label><span style="font-size:.83rem;color:#374151;">{style_html}</span></div>'
+            f'</div>'
+            f'{"<p class=match-desc style=font-size:.85rem;color:#6b7280;line-height:1.65;margin-bottom:1.4rem;border-left:3px solid #ede9fe;padding-left:.75rem;>" + description + "</p>" if description else ""}'
+            f'{cta}'
+          f'</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── Similar products ──────────────────────────────────────────────────────
+    st.markdown('<div class="sec-head">✨ Similar Products</div>', unsafe_allow_html=True)
+    render_grid([df.iloc[i] for i in top_indices[1:5]])
+
+    # ── Style suggestions ─────────────────────────────────────────────────────
+    st.markdown('<div class="sec-head">👗 Style Suggestions</div>', unsafe_allow_html=True)
     try:
-        style_keyword = str(best["style_attribute"]).split(",")[0].strip().lower()
-        outfit_matches = df[df["style_attribute"].astype(str).str.lower().str.contains(style_keyword, na=False)]
-        outfit_matches = outfit_matches[outfit_matches.index != best.name]
-        outfit_df = outfit_matches.sample(n=min(5, len(outfit_matches))) if len(outfit_matches) > 0 else pd.DataFrame()
+        style_kw = str(best["style_attribute"]).split(",")[0].strip().lower()
+        outfit = df[df["style_attribute"].astype(str).str.lower().str.contains(style_kw, na=False)]
+        outfit = outfit[outfit.index != best.name]
+        outfit = outfit.sample(n=min(4, len(outfit))) if len(outfit) else pd.DataFrame()
     except Exception:
-        outfit_df = pd.DataFrame()
+        outfit = pd.DataFrame()
 
-    if outfit_df.empty:
-        st.markdown("""
-        <div class="product-card" style="text-align: center; padding: 3rem;">
-            <h3 style="color: #64748b; margin-bottom: 1rem;">No matching outfit suggestions found</h3>
-            <p style="color: #94a3b8;">Try uploading a different image or explore our trending picks below!</p>
-        </div>
-        """, unsafe_allow_html=True)
+    if outfit.empty:
+        st.markdown(
+            '<div class="empty-state">No matching style suggestions found. Try a different image.</div>',
+            unsafe_allow_html=True,
+        )
     else:
-        cols = st.columns(5, gap="medium")
-        for i, (_, item) in enumerate(outfit_df.iterrows()):
-            with cols[i]:
-                st.markdown(f"""
-                <div class="product-grid-item" role="listitem">
-                    <img src="{item['feature_image']}" class="product-image" alt="{item['product_name']}"/>
-                    <div class="product-brand">{item['brand']}</div>
-                    <div class="product-price">{parse_price(item['selling_price'])} • {item['discount']}% off</div>
-                    {f'<a href="{item["pdp_url"]}" target="_blank" rel="noopener noreferrer" class="product-link" role="link" tabindex="0">View Product</a>' if item["pdp_url"] else ""}
-                </div>
-                """, unsafe_allow_html=True)
+        render_grid(outfit.to_dict("records"))
 
-    # --- Trending Section ---
-    st.markdown('<h2 class="section-header">🔥 Trending Now</h2>', unsafe_allow_html=True)
-    
+    # ── Trending now ──────────────────────────────────────────────────────────
+    st.markdown('<div class="sec-head">🔥 Trending Now</div>', unsafe_allow_html=True)
     df["launch_on"] = pd.to_datetime(df["launch_on"], errors="coerce")
-    trendy = df.dropna(subset=["launch_on"]).sort_values(by=["discount", "launch_on"], ascending=[False, False]).head(5)
-    
-    cols = st.columns(5, gap="medium")
-    for i, (_, row) in enumerate(trendy.iterrows()):
-        with cols[i]:
-            st.markdown(f"""
-            <div class="product-grid-item" role="listitem">
-                <img src="{row['feature_image']}" class="product-image" alt="{row['product_name']}"/>
-                <div class="product-brand">{row['brand']}</div>
-                <div class="product-price">{parse_price(row['selling_price'])} • {row['discount']}% off</div>
-                {f'<a href="{row["pdp_url"]}" target="_blank" rel="noopener noreferrer" class="product-link" role="link" tabindex="0">View Product</a>' if row["pdp_url"] else ""}
-            </div>
-            """, unsafe_allow_html=True)
+    trendy = (
+        df.dropna(subset=["launch_on"])
+        .sort_values(["discount", "launch_on"], ascending=[False, False])
+        .head(4)
+    )
+    render_grid(trendy.to_dict("records"))
 
-    # --- Personalized Recommendations ---
+    # ── Personalised picks ────────────────────────────────────────────────────
     if len(st.session_state.history) > 1:
-        st.markdown('<h2 class="section-header">🧠 Just For You</h2>', unsafe_allow_html=True)
-        
+        st.markdown('<div class="sec-head">🧠 Just For You</div>', unsafe_allow_html=True)
         avg_feat = np.mean(st.session_state.history, axis=0)
-        sims = cosine_similarity([avg_feat], feats)[0]
-        rec_indices = sims.argsort()[-6:][::-1]
-        
-        cols = st.columns(5, gap="medium")
-        for i, idx in enumerate(rec_indices[1:]):
-            rec = df.iloc[idx]
-            with cols[i]:
-                st.markdown(f"""
-                <div class="product-grid-item" role="listitem">
-                    <img src="{rec['feature_image']}" class="product-image" alt="{rec['product_name']}"/>
-                    <div class="product-brand">{rec['brand']}</div>
-                    <div class="product-price">{parse_price(rec['selling_price'])} • {rec['discount']}% off</div>
-                    {f'<a href="{rec["pdp_url"]}" target="_blank" rel="noopener noreferrer" class="product-link" role="link" tabindex="0">View Product</a>' if rec["pdp_url"] else ""}
-                </div>
-                """, unsafe_allow_html=True)
+        rec_sims = cosine_similarity([avg_feat], feats)[0]
+        rec_indices = rec_sims.argsort()[-5:][::-1]
+        render_grid([df.iloc[i] for i in rec_indices[1:5]])
 
 else:
-    # --- Welcome Section ---
+    # ── Welcome / landing page ────────────────────────────────────────────────
     st.markdown("""
-    <div class="detail-card" style="text-align: center; padding: 4rem 2rem; margin-top: 2rem;">
-        <h2 style="color: #1e293b; margin-bottom: 1rem; font-family: 'Playfair Display', serif;">
-            Snap it. Search it. Style it.
-        </h2>
-        <p style="color: #64748b; font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
-            Upload an image of any fashion item and discover similar products, style suggestions, and personalized recommendations powered by advanced AI technology.
-        </p>
-        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: 2rem;">
-            <div style="text-align: center;">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
-                <h4 style="color: #1e293b; margin-bottom: 0.5rem;">Visual Search</h4>
-                <p style="color: #64748b; font-size: 0.9rem;">Find exact matches</p>
+    <div class="welcome">
+        <h2>Snap it. Search it. Style it.</h2>
+        <p>Upload any fashion photo and discover visually similar products,
+           style suggestions, and AI-powered recommendations.</p>
+        <div class="pills">
+            <div class="pill">
+                <div class="pill-icon">🔍</div>
+                <div class="pill-title">Visual Search</div>
+                <div class="pill-desc">Find exact matches</div>
             </div>
-            <div style="text-align: center;">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">👗</div>
-                <h4 style="color: #1e293b; margin-bottom: 0.5rem;">Style Suggestions</h4>
-                <p style="color: #64748b; font-size: 0.9rem;">Complete your look</p>
+            <div class="pill">
+                <div class="pill-icon">👗</div>
+                <div class="pill-title">Style Suggestions</div>
+                <div class="pill-desc">Complete your look</div>
             </div>
-            <div style="text-align: center;">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🧠</div>
-                <h4 style="color: #1e293b; margin-bottom: 0.5rem;">Smart Recommendations</h4>
-                <p style="color: #64748b; font-size: 0.9rem;">Personalized for you</p>
+            <div class="pill">
+                <div class="pill-icon">🔥</div>
+                <div class="pill-title">Trending Now</div>
+                <div class="pill-desc">Stay on trend</div>
             </div>
-                 </p><br>
+            <div class="pill">
+                <div class="pill-icon">🧠</div>
+                <div class="pill-title">Personalised</div>
+                <div class="pill-desc">Made for you</div>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- Footer ---
-st.markdown("---")
+
+# ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("""
-<div style="text-align: center; padding: 2rem; color: white; background: rgba(255, 255, 255, 0.1); border-radius: 16px; margin-top: 2rem;">
-    <p style="margin: 0; font-size: 1rem; font-weight: 500;">
-        Built with ❤️ by <strong>PRIYANK TYAGI</strong>
-    </p>
-    <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">
-        Fashion ML Visual Search Assignment
-    </p>
+<div class="app-footer">
+    Built with ❤️ by <strong>PRIYANK TYAGI</strong> &nbsp;·&nbsp; Fashion ML Visual Search
 </div>
 """, unsafe_allow_html=True)
