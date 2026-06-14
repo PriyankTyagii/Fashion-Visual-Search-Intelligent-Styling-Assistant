@@ -12,8 +12,21 @@ import gdown
 
 def _generate_pwa_icons():
     os.makedirs("static", exist_ok=True)
+    has_custom_icon = os.path.exists("icon.png")
     for size in (192, 512):
         path = f"static/icon-{size}.png"
+        if has_custom_icon:
+            try:
+                with Image.open("icon.png") as img:
+                    try:
+                        resample = Image.Resampling.LANCZOS
+                    except AttributeError:
+                        resample = Image.LANCZOS
+                    img_resized = img.resize((size, size), resample)
+                    img_resized.save(path, "PNG")
+                continue
+            except Exception:
+                pass
         if os.path.exists(path):
             continue
         icon = Image.new("RGB", (size, size), (124, 58, 237))
@@ -34,8 +47,8 @@ _generate_pwa_icons()
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Fashion Visual Search",
-    page_icon="F",
+    page_title="Visual Search Engine",
+    page_icon="static/icon-192.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -235,6 +248,8 @@ header[data-testid="stHeader"] .stToolbar, [data-testid="stToolbar"] { visibilit
 @media (min-width: 768px) {
     .mobile-upload-outer { display: none !important; }
     section[data-testid="stMain"] [data-testid="stFileUploader"] { display: none !important; }
+    section[data-testid="stMain"] [data-testid="stCameraInput"] { display: none !important; }
+    section[data-testid="stMain"] [data-testid="stRadio"] { display: none !important; }
 }
 
 /* ── Empty state ── */
@@ -264,7 +279,7 @@ st.markdown("""
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FashionAI">
+<meta name="apple-mobile-web-app-title" content="Visual Search Engine">
 <meta name="theme-color" content="#7c3aed">
 <link rel="apple-touch-icon" href="/app/static/icon-192.png">
 
@@ -367,7 +382,7 @@ st.markdown("""
 # ── Header ────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="app-header">
-    <h1>Fashion Visual Search</h1>
+    <h1>Visual Search Engine</h1>
     <p>Discover your perfect style – instantly with AI</p>
 </div>
 """, unsafe_allow_html=True)
@@ -522,17 +537,38 @@ if "history" not in st.session_state:
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### Upload a Fashion Image")
-    st.markdown("Drop any photo to find visually similar products instantly.")
+    st.markdown("### Search Fashion Image")
+    st.markdown("Upload a photo or capture one with your camera to find visually similar products instantly.")
 
-    uploaded_file = st.file_uploader(
-        "Choose an image",
-        type=["jpg", "jpeg", "png"],
+    input_source = st.radio(
+        "Select input source",
+        options=["Upload Image", "Capture Image"],
+        horizontal=True,
         label_visibility="collapsed",
+        key="sidebar_source"
     )
 
-    if uploaded_file:
-        img_preview = Image.open(uploaded_file).convert("RGB")
+    uploaded_file = None
+    captured_file = None
+
+    if input_source == "Upload Image":
+        uploaded_file = st.file_uploader(
+            "Choose an image",
+            type=["jpg", "jpeg", "png"],
+            label_visibility="collapsed",
+            key="sidebar_uploader",
+        )
+    else:
+        captured_file = st.camera_input(
+            "Take a picture",
+            label_visibility="collapsed",
+            key="sidebar_camera",
+        )
+
+    active_file = uploaded_file or captured_file
+
+    if active_file:
+        img_preview = Image.open(active_file).convert("RGB")
         st.image(img_preview, use_container_width=True, caption="Your image")
         st.markdown("---")
         st.markdown(
@@ -545,16 +581,34 @@ with st.sidebar:
 
 # ── Mobile upload (centered, no preview — hidden on desktop via CSS) ──────────
 st.markdown('<div class="mobile-upload-outer">', unsafe_allow_html=True)
-mobile_file = st.file_uploader(
-    "Upload a fashion image",
-    type=["jpg", "jpeg", "png"],
+mobile_source = st.radio(
+    "Select input source",
+    options=["Upload Image", "Capture Image"],
+    horizontal=True,
     label_visibility="collapsed",
-    key="mobile_uploader",
+    key="mobile_source",
 )
+
+mobile_file = None
+mobile_captured = None
+
+if mobile_source == "Upload Image":
+    mobile_file = st.file_uploader(
+        "Upload a fashion image",
+        type=["jpg", "jpeg", "png"],
+        label_visibility="collapsed",
+        key="mobile_uploader",
+    )
+else:
+    mobile_captured = st.camera_input(
+        "Take a picture",
+        label_visibility="collapsed",
+        key="mobile_camera",
+    )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# whichever uploader has a file wins
-uploaded_file = uploaded_file or mobile_file
+# whichever uploader/camera has a file wins
+uploaded_file = active_file or mobile_file or mobile_captured
 
 
 # ── Main content ──────────────────────────────────────────────────────────────
@@ -687,6 +741,6 @@ else:
 # ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="app-footer">
-    Built by <strong>PRIYANK TYAGI</strong> &nbsp;·&nbsp; Fashion ML Visual Search
+    Built by <strong>PRIYANK TYAGI</strong> &nbsp;·&nbsp; Visual Search Engine
 </div>
 """, unsafe_allow_html=True)

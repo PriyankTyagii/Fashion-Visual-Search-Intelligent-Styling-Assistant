@@ -1,7 +1,7 @@
 {
-  "name": "Fashion Visual Search",
-  "short_name": "FashionAI",
-  "description": "Discover your perfect style instantly with AI-powered visual search",
+  "name": "Visual Search Engine",
+  "short_name": "Visual Search",
+  "description": "Discover your perfect style instantly with AI-powered visual search engine",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1a3e",
